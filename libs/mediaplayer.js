@@ -1,7 +1,7 @@
 "use strict"
 
 /*
-* 协议数据处理
+* Protocol builder
 **/
 var Protocol = {
     "buildJSONProtocol": function(namespace, data){
@@ -13,15 +13,15 @@ var Protocol = {
 };
 
 /*
-* 播放器类
+* Player Class
 * How to use:
 * //1. Create MediaPlayer Instance
 * var mediaPlayer = new MediaPlayer("{video element id}");
-* //Listen message from sender, data is a json object
+* //2. Listen message from sender, data is a json object
 * mediaPlayer.on("message", function(data){
 *       
 * });
-* //send message to receiver
+* //3. send message to receiver
 * mediaPlayer.send("{String}");
 * @param {String|videoElement} video Element id  or video element
 **/
@@ -76,13 +76,13 @@ var MediaPlayer = function(videoId){
     };
 
     /*
-    * 创建消息通道对象
+    * Create MessageChannel Obejct
     **/
     var channel = new MessageChannel(channelId);
 
     /*
-    * 消息报告类
-    * 用于将video的状态发送给sender，完成与sender的heartbeat
+    * MessageReport Class
+    * Wrapper protocol message
     **/
     var MessageReport = function(){
         var namespace = "urn:x-cast:com.google.cast.media";
@@ -185,7 +185,7 @@ var MediaPlayer = function(videoId){
         };
     };
 
-    //实例化MessageReport对象
+    //create MessageReport Object.
     var messageReport = new MessageReport();
 
     self.load = function(url, videoType, title, subtitle, mediaMetadata){
@@ -245,7 +245,7 @@ var MediaPlayer = function(videoId){
     };
 
     /*
-    * 监听sender端消息 todo
+    * sender message listener.
     **/
     channel.on("message", function(senderId, messageType, message){
         var messageData = null;

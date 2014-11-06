@@ -15,22 +15,21 @@ function guid(){
 
 /**
 * Receiver Daemon Class
-* 创建并维护与Fling Daemon的通信。与Fling Daemon通过心跳判断Receiver应用是否还在运行。
+* Maintain Communication with Fling Daemon. 
 * How to use: 
 * //1. Create Receiver Daemon Instance
 * var receiverDaemon = new ReceiverDaemon();
-* //2. open receiver daemon
-* receiverDaemon.open();
-* //3. linsten receiver daemon open event.
+* //2. linsten receiver daemon open event.
 * receiverDaemon.on("opened", function(){
-*   //do something after Receiver Daemon opened
+*   //todo something after Receiver Daemon opened
 * });
+* //3. open receiver daemon
+* receiverDaemon.open();
 */
 var ReceiverDaemon = function(){
     var self = this;
 
     var wsServer = "ws://localhost:9431/receiver/"+appid,
-    // var wsServer = "ws://localhost:9431/receiver",
         ws = null,
         sender = {
             "count":0,
@@ -138,7 +137,7 @@ var ReceiverDaemon = function(){
 
     /**
     * Send message to Fling Daemon
-    * @param {JSON objects} 任意数据
+    * @param {JSON objects}
     */
     self.send = function(data){
         data["appid"] = self.appid;
@@ -160,14 +159,14 @@ var ReceiverDaemon = function(){
     };
 
     /**
-    * 事件回调
-    * @param {String} 事件类型，支持的事件有message|open|close|senderconnected|senderdisconnected|error
-    *                 message: 收到Fling Daemon的数据时调用，并向回调函数中传递收到的数据（JSON object）
-                      opened: 与Fling Daemon建立连接后调用
-                      closed: 与Fling Daemon断开链接后调用
-                      senderconnected: 有sender链接后调用
-                      senderdisconnected: 有sender断开链接后调用
-                      error: 当与Fling Daemon连接出现异常时调用
+    * Events callback
+    * @param {String} Event types: message|open|close|senderconnected|senderdisconnected|error
+    *                 message: when received message, parameter is JSON Object.
+                      opened: receiver application launch success.
+                      closed: receiver application close.
+                      senderconnected: sender connect
+                      senderdisconnected: sender disconnect
+                      error: catch any error
     * @param {function} callback function
     */
     self.on = function(type, func){
@@ -176,7 +175,7 @@ var ReceiverDaemon = function(){
 };
 
 /*
-* 与sender端的消息通道类
+* Message Channel with Sender Application
 **/
 var MessageChannel = function(channelId){
     var self = this;
