@@ -17,23 +17,25 @@ function guid(){
 * Receiver Daemon Class
 * Maintain Communication with Fling Daemon. 
 * How to use: 
-* //1. Create Receiver Daemon Instance. parameter is application's id, this id must be same as your sender appid
-* var receiverDaemon = new ReceiverDaemon("~browser");
-* //2. linsten receiver daemon open event.
-* receiverDaemon.on("opened", function(){
-*   //todo something after Receiver Daemon opened
-* });
-* //3. open receiver daemon
-* receiverDaemon.open();
+*   //1. Create Receiver Daemon Instance. parameter is application's id, this id must be same as your sender appid
+*   var receiverDaemon = new ReceiverDaemon("~browser");
+*   //2. Create MessageChannel Obejct
+*   var channel = receiverDaemon.createMessageChannel("ws");
+*   //3. open receiver daemon
+*   receiverDaemon.open();
 */
 var ReceiverDaemon = function(customAppid){
     var self = this;
+
+    self.channelType = "ws";
+    var channelId = guid();
     if(typeof(customAppid)!="undefined"){
         self.appid = customAppid;
     }else{
         self.appid = appid;
     }
     var wsServer = "ws://localhost:9431/receiver/"+self.appid,
+    // var wsServer = "ws://localhost:9431/receiver",
         ws = null,
         sender = {
             "count":0,
@@ -60,6 +62,12 @@ var ReceiverDaemon = function(customAppid){
                     self.uuid = data["service_info"]["uuid"];
                     self.deviceName = data["service_info"]["device_name"];
                     console.info("=========================================>flingd has onopened: " ,("onopend" in self));
+                    
+                    if(self.channelType=="ws"){
+                        var wsAddress = "ws://"+receiverDaemon.localIpAddress+":9439/channels/"+channelId;
+                        console.info("-------------------------------------> player ws addr: ", wsAddress);
+                        receiverDaemon.send({"type":"additionaldata","additionaldata":{ "serverId": wsAddress}});
+                    }
                     ("onopened" in self)&&(self.onopened());
                     break;
                 case "heartbeat":
@@ -100,6 +108,10 @@ var ReceiverDaemon = function(customAppid){
     self._onerror = function(evt){
         ("onerror" in self)&&(self.onerror(evt));
     }
+
+    self.getChannelId = function(){
+        return channelId;
+    };
 
     /**
     * Start Receiver Daemon
@@ -165,7 +177,7 @@ var ReceiverDaemon = function(customAppid){
     /**
     * Events callback
     * @param {String} Event types: message|open|close|senderconnected|senderdisconnected|error
-    *                 message: when received message, parameter is JSON Object.
+    *                 message: Fling server message listener, parameter is JSON Object.
                       opened: receiver application launch success.
                       closed: receiver application close.
                       senderconnected: sender connect
@@ -175,6 +187,21 @@ var ReceiverDaemon = function(customAppid){
     */
     self.on = function(type, func){
         self["on"+type] = func;
+    };
+
+    /*
+    * Create MessageChannel
+    * @param {String} channel defalut "ws" represent WebSocket
+    **/
+    self.createMessageChannel = function(channelType){
+        var channel = null;
+        if("undefined"==typeof(channelType)){
+            self.channelType = channelType;
+        }
+        if(self.channelType = channelType=="ws"){
+            channel = new MessageChannel(channelId);    
+        }
+        return channel;
     };
 };
 

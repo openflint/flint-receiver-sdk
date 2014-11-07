@@ -42,17 +42,11 @@ var MediaPlayer = function(videoId){
     self.requestIdSeek = 0;
     self.requestIdPing = 0;
     self.requestIdGetStatus = 0;
-
-    var channelId = guid();
     
     //Receiver Daemon instance
     var receiverDaemon = new ReceiverDaemon();
-    //listen receiver launch event
-    receiverDaemon.on("opened", function(){
-        var wsAddress = "ws://"+receiverDaemon.localIpAddress+":9439/channels/"+channelId;
-        console.info("-------------------------------------> player ws addr: ", wsAddress);
-        receiverDaemon.send({"type":"additionaldata","additionaldata":{ "serverId": wsAddress}});
-    });
+    // Create MessageChannel Obejct
+    var channel = receiverDaemon.createMessageChannel("ws");
     //start Receiver Daemon
     receiverDaemon.open();
     
@@ -74,11 +68,6 @@ var MediaPlayer = function(videoId){
             },50);
         }
     };
-
-    /*
-    * Create MessageChannel Obejct
-    **/
-    var channel = new MessageChannel(channelId);
 
     /*
     * MessageReport Class
