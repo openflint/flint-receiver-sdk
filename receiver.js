@@ -198,7 +198,7 @@ var ReceiverDaemon = function(customAppid){
         if("undefined"==typeof(channelType)){
             self.channelType = channelType;
         }
-        if(self.channelType = channelType=="ws"){
+        if(self.channelType == "ws"){
             channel = new MessageChannel(channelId);    
         }
         return channel;
