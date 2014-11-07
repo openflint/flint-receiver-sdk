@@ -17,8 +17,8 @@ function guid(){
 * Receiver Daemon Class
 * Maintain Communication with Fling Daemon. 
 * How to use: 
-* //1. Create Receiver Daemon Instance
-* var receiverDaemon = new ReceiverDaemon();
+* //1. Create Receiver Daemon Instance. parameter is application's id, this id must be same as your sender appid
+* var receiverDaemon = new ReceiverDaemon("~browser");
 * //2. linsten receiver daemon open event.
 * receiverDaemon.on("opened", function(){
 *   //todo something after Receiver Daemon opened
@@ -26,17 +26,21 @@ function guid(){
 * //3. open receiver daemon
 * receiverDaemon.open();
 */
-var ReceiverDaemon = function(){
+var ReceiverDaemon = function(customAppid){
     var self = this;
-
-    var wsServer = "ws://localhost:9431/receiver/"+appid,
+    if(typeof(customAppid)!="undefined"){
+        self.appid = customAppid;
+    }else{
+        self.appid = appid;
+    }
+    var wsServer = "ws://localhost:9431/receiver/"+self.appid,
         ws = null,
         sender = {
             "count":0,
             "list":{}
         };
     console.info("------------------------------------------>flingd: ", wsServer);
-    self.appid = (typeof(appid)=="undefined"||!appid)?"~browser":appid;
+    
     self._onopen = function(evt){
         self.send({"type":"register"});
     };

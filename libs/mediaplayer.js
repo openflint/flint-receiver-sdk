@@ -88,6 +88,10 @@ var MediaPlayer = function(videoId){
         var namespace = "urn:x-cast:com.google.cast.media";
             
         function loadData(){
+            var duration = 0;
+            if(video.duration){
+                duration = video.duration;
+            }
             return {
                 "type": "MEDIA_STATUS",
                 "status": [
@@ -95,7 +99,7 @@ var MediaPlayer = function(videoId){
                         "mediaSessionId": 1,
                         "playbackRate": video.playbackRate,
                         "currentTime": video.currentTime,
-                        "duration": video.duration,
+                        "duration": duration,
                         "supportedMediaCommands": 15,
                         "volume": {
                             "level": video.volume,
