@@ -64,9 +64,9 @@ var ReceiverDaemon = function(customAppid){
                     console.info("=========================================>flingd has onopened: " ,("onopend" in self));
                     
                     if(self.channelType=="ws"){
-                        var wsAddress = "ws://"+receiverDaemon.localIpAddress+":9439/channels/"+channelId;
+                        var wsAddress = "ws://"+self.localIpAddress+":9439/channels/"+channelId;
                         console.info("-------------------------------------> player ws addr: ", wsAddress);
-                        receiverDaemon.send({"type":"additionaldata","additionaldata":{ "serverId": wsAddress}});
+                        self.send({"type":"additionaldata","additionaldata":{ "serverId": wsAddress}});
                     }
                     ("onopened" in self)&&(self.onopened());
                     break;
