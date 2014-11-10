@@ -47,9 +47,10 @@ var ReceiverDaemon = function(customAppid){
         self.send({"type":"register"});
     };
 
-    self._onclose = function(evt){
+    self._onclose = function(){
         self.send({"type":"unregister"});
         ("onclosed" in self)&&(self.onclose());
+        ws.close();
     };
 
     self._onmessage = function(data){
@@ -93,7 +94,7 @@ var ReceiverDaemon = function(customAppid){
     self._onsenderchange = function(data, type){
         var t = new Date().getTime();
 
-        if(data=="senderconnected"){
+        if(type=="senderconnected"){
             sender.list[data.token] = {
                 "token": data.token,
                 "timestamp": t
@@ -125,7 +126,6 @@ var ReceiverDaemon = function(customAppid){
                 }; 
                 ws.onclose = function (evt) { 
                     console.info("----------------------------------------------->flingd onclose....");
-                    self._onclose(evt);
                 }; 
                 ws.onmessage = function (evt) { 
                     console.info("----------------------------------------------->flingd onmessage....", evt.data);
@@ -148,7 +148,7 @@ var ReceiverDaemon = function(customAppid){
     * Close Receiver Daemon
     */
     self.close = function(){
-        ws.close();
+        self._onclose();
     };
 
     /**
