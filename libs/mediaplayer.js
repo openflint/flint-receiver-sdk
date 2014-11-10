@@ -127,6 +127,7 @@ var MediaPlayer = function(videoId){
                     "metadataType": self.mediaMetadata.media.metadata.metadataType
                 }
             };
+            video.style.visibility = "visible";
             channel.send(Protocol.buildJSONProtocol(namespace, messageData));
         };
         this.playing = function(){
