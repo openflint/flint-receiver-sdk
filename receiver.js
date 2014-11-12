@@ -114,6 +114,14 @@ var ReceiverDaemon = function(customAppid){
         return channelId;
     };
 
+    /*
+    * Get connected sender list
+    * @return {JSON Object} e.g. {"sender-token-a":{"token":"sender-token-a","timestamp":"Sender connection time"},"sender-token-b":{...}}
+    **/
+    self.getSenderList = function(){
+        return sender.list;
+    };
+
     /**
     * Start Receiver Daemon
     */
