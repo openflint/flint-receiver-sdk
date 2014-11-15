@@ -148,7 +148,7 @@ var ReceiverManager = function (appid) {
                         var size = self.getChannelsCount();
                         if (size == 1) {
                             for (var channel in _channels) {
-                                additionalData["flint:channelBaseUrl"] = "ws://" + _wsFlingdIp + ":9439/channels/" + channel;
+                                additionalData["channelBaseUrl"] = "ws://" + _wsFlingdIp + ":9439/channels/" + channel;
                             }
                         } else if (size > 1) {
                             for (var channel in _channels) {
@@ -305,6 +305,7 @@ var MessageChannel = function (daemon, channelId) {
             console.info(tag, "MessageChannel [", _channelId, "] close");
             ("onclose" in self) && (self.onclose(event));
         };
+
         _channel.onmessage = function (event) {
             console.info(tag, "MessageChannel [", _channelId, "] received: ", event.data);
             self._onmessage(JSON.parse(event.data));

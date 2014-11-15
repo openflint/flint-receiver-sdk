@@ -30,18 +30,18 @@ var ReceiverManagerWrapper = function (appid) {
 
         _mainChannel.on("senderConnected", function (senderId) {
             for (var bus in _messageBusList) {
-                bus.onsenderConnected(senderId);
+                _messageBusList[bus].onsenderConnected(senderId);
             }
         });
 
         _mainChannel.on("senderDisonnected", function (senderId) {
             for (var bus in _messageBusList) {
-                bus.onsenderDisonnected(senderId);
+                _messageBusList[bus].onsenderDisonnected(senderId);
             }
         });
 
         _mainChannel.on("message", function (senderId, message) {
-            var data = message.data;
+            var data = JSON.parse(message);
             var ns = data.namespace;
             if (ns && _messageBusList[ns]) {
                 _messageBusList[ns].onmessage(senderId, data.payload);
@@ -67,16 +67,20 @@ var ReceiverManagerWrapper = function (appid) {
 
 var MessageBus = function (channel, namespace) {
     var self = this;
+    var tag = "@@@";
     var _channel = channel;
     var _namespace = namespace;
 
     self.onsenderConnected = function (senderId) {
+        console.log(tag, "received sender connected: ", senderId);
     };
 
     self.onsenderDisonnected = function (senderId) {
+        console.log(tag, "received sender disconnected: ", senderId);
     };
 
     self.onmessage = function (senderId, payload) {
+        console.log(tag, "received sender message: [", senderId, "] to ", payload);
     };
 
     self.send = function (payload, senderId) {
