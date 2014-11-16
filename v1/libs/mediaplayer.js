@@ -31,7 +31,7 @@ var MediaPlayer = function (manager, videoId) {
     self.seqGetStatus = 0;
 
     self.receiverWrapper = manager;
-    var messageBus = self.receiverWrapper.createMessageBus("urn:x-cast:com.google.cast.media");
+    var messageBus = self.receiverWrapper.createMessageBus("urn:flint:org.openflint.fling.media");
 
     self.start = function () {
         self.receiverWrapper.open();
