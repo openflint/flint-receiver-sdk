@@ -13,7 +13,7 @@
  * mediaPlayer.send("{String}");
  * @param {String|videoElement} video Element id  or video element
  **/
-var MediaPlayer = function (videoId) {
+var MediaPlayer = function (manager, videoId) {
     var self = this;
     self.status = "IDLE";
     self.playerState = "IDLE";
@@ -30,7 +30,7 @@ var MediaPlayer = function (videoId) {
     self.seqSeek = 0;
     self.seqGetStatus = 0;
 
-    self.receiverWrapper = new ReceiverManagerWrapper("~flintplayer");
+    self.receiverWrapper = manager;
     var messageBus = self.receiverWrapper.createMessageBus("urn:x-cast:com.google.cast.media");
 
     self.start = function () {
