@@ -33,13 +33,13 @@ var ReceiverManagerWrapper = function (appid) {
 
         _mainChannel.on("senderConnected", function (senderId) {
             for (var bus in _messageBusList) {
-                _messageBusList[bus].onsenderConnected(senderId);
+                _messageBusList[bus]._onsenderConnected(senderId);
             }
         });
 
         _mainChannel.on("senderDisonnected", function (senderId) {
             for (var bus in _messageBusList) {
-                _messageBusList[bus].onsenderDisonnected(senderId);
+                _messageBusList[bus]._onsenderDisonnected(senderId);
             }
         });
 
@@ -66,6 +66,18 @@ var ReceiverManagerWrapper = function (appid) {
         }
         return messageBus;
     };
+
+    self.getMessageBusList = function () {
+        return _messageBusList;
+    };
+
+    self.close = function () {
+        _receiverManager.close();
+    };
+
+    self.setAdditionalData = function (additionaldata) {
+        _receiverManager.setAdditionalData(additionaldata);
+    };
 };
 
 var MessageBus = function (channel, namespace) {
@@ -73,13 +85,18 @@ var MessageBus = function (channel, namespace) {
     var tag = "@@@";
     var _channel = channel;
     var _namespace = namespace;
+    var _senders = {}
 
-    self.onsenderConnected = function (senderId) {
+    self._onsenderConnected = function (senderId) {
         console.log(tag, "received sender connected: ", senderId);
+        _senders[senderId] = senderId;
+        ("onsenderConnected" in self) && (self.onsenderConnected(senderId));
     };
 
-    self.onsenderDisonnected = function (senderId) {
+    self._onsenderDisonnected = function (senderId) {
         console.log(tag, "received sender disconnected: ", senderId);
+        delete _senders[senderId];
+        ("onsenderDisonnected" in self) && (self.onsenderDisonnected(senderId));
     };
 
     self.onmessage = function (senderId, payload) {
@@ -97,6 +114,14 @@ var MessageBus = function (channel, namespace) {
 
     self.setChannel = function(channel) {
         _channel = channel;
+    };
+
+    self.getSenderList = function () {
+        return _senders;
+    };
+
+    self.getNamespace = function() {
+        return _namespace;
     };
 
     self.on = function (type, func) {

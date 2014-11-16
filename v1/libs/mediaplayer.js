@@ -33,10 +33,6 @@ var MediaPlayer = function (manager, videoId) {
     self.receiverWrapper = manager;
     var messageBus = self.receiverWrapper.createMessageBus("urn:flint:org.openflint.fling.media");
 
-    self.start = function () {
-        self.receiverWrapper.open();
-    };
-
     var video = (typeof(videoId) == "string") ? document.getElementById(videoId) : videoId;
     if (video == null) {
         throw Error("video element undefined!");

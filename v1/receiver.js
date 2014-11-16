@@ -237,7 +237,7 @@ var ReceiverManager = function (appid) {
         return _channels[channelId];
     };
 
-    self.getChannels = function () {
+    self.getChannelList = function () {
         return _channels;
     };
 
@@ -249,7 +249,7 @@ var ReceiverManager = function (appid) {
      * get all senders
      * @returns {{}}
      */
-    self.getSenders = function () {
+    self.getSenderList = function () {
         return _senders;
     };
 
