@@ -27,6 +27,9 @@ var ReceiverManagerWrapper = function (appid) {
 
     self.open = function () {
         _mainChannel = _receiverManager.createMessageChannel();
+        for (var bus in _messageBusList) {
+            _messageBusList[bus].setChannel(_mainChannel);
+        }
 
         _mainChannel.on("senderConnected", function (senderId) {
             for (var bus in _messageBusList) {
@@ -57,7 +60,7 @@ var ReceiverManagerWrapper = function (appid) {
             if (_messageBusList[namespace]) {
                 messageBus = _messageBusList[namespace];
             } else {
-                messageBus = new MessageBus(namespace);
+                messageBus = new MessageBus(_mainChannel, namespace);
                 _messageBusList[namespace] = messageBus;
             }
         }
@@ -86,8 +89,14 @@ var MessageBus = function (channel, namespace) {
     self.send = function (payload, senderId) {
         var data = {};
         data["namespace"] = _namespace;
-        data["payload"] = JSON.stringify(payload);
-        _channel.send(data, senderId);
+        data["payload"] = payload;
+        if (_channel) {
+            _channel.send(JSON.stringify(data), senderId);
+        }
+    };
+
+    self.setChannel = function(channel) {
+        _channel = channel;
     };
 
     self.on = function (type, func) {
