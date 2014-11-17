@@ -216,11 +216,10 @@ var MediaPlayer = function (manager, videoId) {
         }
     };
 
-    var _senderId = null;
+    var _senderId = "*:*";
 
     messageBus.on("senderConnected", function (senderId) {
         console.log("@#@#@#@#", "MediaPlayer received sender connected: ", senderId);
-        _senderId = senderId;
     });
 
     messageBus.on("senderDisonnected", function (senderId) {
