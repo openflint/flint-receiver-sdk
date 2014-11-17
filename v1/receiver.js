@@ -31,9 +31,9 @@ var ReceiverManager = function (appid) {
      * member variable definition and initialization *
      *************************************************/
     var self = this;
+    var _tag = "ReceiverManager ### ->";
 
     var _flingIpc = null;
-    var _senders = {};
     var _additionaldata = null;
 
     var _channels = {};
@@ -51,12 +51,12 @@ var ReceiverManager = function (appid) {
      */
     self.open = function () {
         if (!_appid) {
-            console.error("appid must be set before openning websocket!!!");
+            console.error(_tag, "appid must be set before openning websocket!!!");
             return;
         }
 
         if (self._isStarted()) {
-            console.warn("flingIPC's state is ", _flingIpc.readyState, ", cannot reopen");
+            console.warn(tag, "flingIPC's state is ", _flingIpc.readyState, ", cannot reopen");
             return;
         }
 
@@ -67,24 +67,24 @@ var ReceiverManager = function (appid) {
 
         _flingIpc = new WebSocket(_wsServer);
         _flingIpc.onopen = function (event) {
-            console.info("flingIPC onopen!!!");
-            self.send({"type": "register"});
+            console.info(_tag, "flingIPC onopen!!!");
+            self._send({"type": "register"});
             ("onopen" in self) && (self.onopen(event));
         };
         _flingIpc.onclose = function (event) {
-            console.info("flingIPC onclose!!!");
+            console.info(_tag, "flingIPC onclose!!!");
             ("onclosed" in self) && (self.onclose(event));
             _flingIpc = null;
         };
         _flingIpc.onerror = function (event) {
-            console.error("flingIPC onerror: ", event);
+            console.error(_tag, "flingIPC onerror: ", event);
             event.message = "Underlying websocket is not open";
             event.socketReadyState = event.target.readyState;
             ("onerror" in self) && (self.onerror(event));
             _flingIpc = null;
         };
         _flingIpc.onmessage = function (event) {
-            console.info("flingIPC onmessage: [", event, "]");
+            console.info(_tag, "flingIPC onmessage: [", event, "]");
             if (event.data) {
                 var data = JSON.parse(event.data);
                 self._onmessage(data);
@@ -96,11 +96,13 @@ var ReceiverManager = function (appid) {
      * close ReceiverManager and close all channels if present
      */
     self.close = function () {
-        self.send({"type": "unregister"});
+        self._send({"type": "unregister"});
         for (var channel in _channels) {
             _channels[channel].close();
         }
-        _flingIpc.close();
+        if (_flingIpc) {
+            _flingIpc.close();
+        }
     };
 
     /**
@@ -109,8 +111,43 @@ var ReceiverManager = function (appid) {
      */
     self.setAdditionalData = function (additionaldata) {
         _additionaldata = additionaldata;
-        console.info("set additionaldata to: ", _additionaldata);
-        self.send({"type": "additionaldata", "additionaldata": _additionaldata});
+        console.info(_tag, "set additionaldata to: ", _additionaldata);
+        self._send({"type": "additionaldata", "additionaldata": _additionaldata});
+    };
+
+    /**
+     * create a new MessageChannel. Must be called before ReceiverManager.open()
+     * @param channelId
+     * @returns MessageChannel
+     */
+    self.createMessageChannel = function (channelId) {
+        if (self._isStarted()) {
+            console.error(_tag, " started, cannot create new MessageChannel!");
+            return;
+        }
+
+        if (!channelId) {
+            console.error(_tag, " channelId is null!!!");
+            return;
+        }
+
+        var channel = null;
+        if (_channels[channelId]) {
+            console.error(_tag, "duplicated MessageChannel id: ", channelId);
+            channel = _channels[channelId];
+        } else {
+            channel = new MessageChannel(self, channelId);
+            _channels[channelId] = channel;
+            channel["_onclose"] = function(channelId) {
+                console.error(_tag, " [", channelId, "] is closed!!!");
+                delete _channels[channelId];
+            };
+            channel["_onerror"] = function(channelId) {
+                console.error(_tag, " [", channelId, "] is broken!!!");
+                delete _channels[channelId];
+            };
+        }
+        return channel;
     };
 
     /**
@@ -130,22 +167,22 @@ var ReceiverManager = function (appid) {
      */
     self._onmessage = function (data) {
         if (data) {
-            console.info("ReceiverManager received: ", data);
+            console.info(_tag, "ReceiverManager received: ", data);
             switch (data.type) {
-                case "startheartbeat":
-                    console.info("receiver ready to start heartbeat!!!");
+                case "startHeartbeat":
+                    console.info(_tag, "receiver ready to start heartbeat!!!");
                     break;
                 case "registerok":
-                    console.info("receiver register done!!!");
+                    console.info(_tag, "receiver register done!!!");
                     _wsFlingdIp = data["service_info"]["ip"][0];
                     // var uuid = data["service_info"]["uuid"];
                     // var deviceName = data["service_info"]["device_name"];
 
                     if (_additionaldata) {
-                        self.send({"type": "additionaldata", "additionaldata": _additionaldata});
+                        self._send({"type": "additionaldata", "additionaldata": _additionaldata});
                     } else {
                         var additionalData = {}
-                        var size = self.getChannelsCount();
+                        var size = Object.keys(_channels).length;
                         if (size == 1) {
                             for (var channel in _channels) {
                                 additionalData["channelBaseUrl"] = "ws://" + _wsFlingdIp + ":9439/channels/" + channel;
@@ -156,29 +193,27 @@ var ReceiverManager = function (appid) {
                             }
                         }
                         if (Object.keys(additionalData).length > 0) {
-                            self.send({"type": "additionaldata", "additionaldata": additionalData});
+                            self._send({"type": "additionaldata", "additionaldata": additionalData});
                         }
                     }
                     break;
                 case "heartbeat":
                     if (data.heartbeat == "ping") {
-                        self.send({"type": "heartbeat", "heartbeat": "pong"});
+                        self._send({"type": "heartbeat", "heartbeat": "pong"});
                     } else if (data.heartbeat == "pong") {
-                        self.send({"type": "heartbeat", "heartbeat": "ping"});
+                        self._send({"type": "heartbeat", "heartbeat": "ping"});
                     } else {
                         console.error("unknow heartbeat message!!!");
                     }
                     break;
                 case "senderconnected":
-                    _senders[data.token] = data.token;
-                    ("onsenderconnected" in self) && (self.onsenderconnected(data.token));
+//                    ("onsenderconnected" in self) && (self.onsenderconnected(data.token));
                     break;
                 case "senderdisconnected":
-                    delete _senders[data.token];
-                    ("onsenderdisconnected" in self) && (self.onsenderdisconnected(data.token));
+//                    ("onsenderdisconnected" in self) && (self.onsenderdisconnected(data.token));
                     break;
                 default:
-                    console.warn("unknow IPC message: ", data);
+                    console.warn(_tag, "unknow IPC message: ", data);
                     break;
             }
         }
@@ -188,17 +223,17 @@ var ReceiverManager = function (appid) {
      * send data to IPC
      * @param data
      */
-    self.send = function (data) {
-        console.info("ReceiverManager send: [", data, "] to ", _appid);
+    self._send = function (data) {
         data["appid"] = _appid;
         data = JSON.stringify(data);
         if (_flingIpc && _flingIpc.readyState == OPEN) {
+            console.info(_tag, "IPC send: [", data, "] to ", _appid);
             _flingIpc.send(data);
         } else if (_flingIpc && _flingIpc.readyState == CONNECTING) {
             console.warn("IPC not ready, send delay");
             var selfSend = this;
             setTimeout(function () {
-                selfSend.send(data);
+                selfSend._send(data);
             }, 50);
         } else {
             console.error("IPC not ready, send failed!");
@@ -213,137 +248,48 @@ var ReceiverManager = function (appid) {
     self.on = function (type, func) {
         self["on" + type] = func;
     };
-
-    /**
-     * create a new MessageChannel. Must be called before ReceiverManager.open()
-     * @param channelId
-     * @returns MessageChannel
-     */
-    self.createMessageChannel = function (channelId) {
-        if (self._isStarted()) {
-            console.error("ReceiverManager is started, cannot create new MessageChannel!");
-            return;
-        }
-
-        if (!channelId) {
-            channelId = "main_message_channel";
-        }
-
-        if (_channels[channelId]) {
-            console.error("duplicated MessageChannel id: ", channelId);
-        } else {
-            _channels[channelId] = new MessageChannel(self, channelId);
-        }
-        return _channels[channelId];
-    };
-
-    self.getChannelList = function () {
-        return _channels;
-    };
-
-    self.getChannelsCount = function () {
-        return Object.keys(_channels).length;
-    };
-
-    /**
-     * get all senders
-     * @returns {{}}
-     */
-    self.getSenderList = function () {
-        return _senders;
-    };
-
-    /**
-     * get the count of all senders
-     * @returns {Number}
-     */
-    self.getSenderCount = function () {
-        return Object.keys(_senders).length;
-    };
-
-    /**
-     * handle broken MessageChannel
-     * @param channelId
-     */
-    self.onMessageChannelError = function (channelId) {
-        console.error("MessageChannel [", channelId, "] is broken!!!");
-        delete _channels[channelId];
-    };
 };
 
 /*
  * Message Channel with Sender Application
  **/
-var MessageChannel = function (daemon, channelId) {
+var MessageChannel = function (manager, channelId) {
     var self = this;
-    var tag = "#####";
-    var _daemon = daemon;
+    var _tag = "MessageChannel @@@ ->";
+    var _manager = manager;
 
     var _channelId = channelId;
     var _channel = null;
-
-    self.getChannelId = function () {
-        return _channelId;
-    };
 
     /**
      * open this MessageChannel
      */
     self.open = function () {
         if (_channel && (_channel.readyState == CONNECTING || _channel.readyState == OPEN)) {
-            console.warn(tag, "MessageChannel [", _channelId, "]", " state is ", _channel.readyState, ", cannot reopen");
+            console.warn(_tag, " [", _channelId, "]", " state is ", _channel.readyState, ", cannot reopen");
             return;
         }
 
-        // additional data 中tag为channelBaseUrl
         _channel = new WebSocket("ws://127.0.0.1:9439/channels/" + _channelId);
         _channel.onopen = function (event) {
-            console.info(tag, "MessageChannel [", _channelId, "] open");
+            console.info(_tag, "MessageChannel [", _channelId, "] open");
             ("onopen" in self) && (self.onopen(event));
         };
         _channel.onclose = function (event) {
-            console.info(tag, "MessageChannel [", _channelId, "] close");
+            console.info(_tag, "MessageChannel [", _channelId, "] close");
+            ("_onclose" in self) && (self._onclose(event));
             ("onclose" in self) && (self.onclose(event));
         };
 
         _channel.onmessage = function (event) {
-            console.info(tag, "MessageChannel [", _channelId, "] received: ", event.data);
+            console.info(_tag, "MessageChannel [", _channelId, "] received: ", event.data);
             self._onmessage(JSON.parse(event.data));
         };
         _channel.onerror = function (event) {
-            console.info(tag, "MessageChannel [", _channelId, "] error");
+            console.info(_tag, "MessageChannel [", _channelId, "] error");
+            ("_onerror" in self) && (self._onerror(event));
             ("onerror" in self) && (self.onerror(event));
-            if (_daemon.onMessageChannelError) {
-                _daemon.onMessageChannelError(_channelId);
-            }
         };
-    };
-
-    /**
-     * handler message from MessageChannel
-     * @param message
-     * @private
-     */
-    self._onmessage = function (message) {
-        if (message) {
-            switch (message.type) {
-                case "senderConnected":
-                    console.info(tag, "MessageChannel [", _channelId, "] received senderConnected");
-                    console.info(tag, message.senderId, " connected!!!");
-                    ("onsenderConnected" in self) && (self.onsenderConnected(message.senderId));
-                    break;
-                case "senderDisonnected":
-                    console.info(tag, "MessageChannel [", _channelId, "] received senderDisonnected");
-                    console.info(tag, message.senderId, " left!!!");
-                    ("onsenderDisonnected" in self) && (self.onsenderDisonnected(message.senderId));
-                    break;
-                case "message":
-                    ("onmessage" in self) && self.onmessage(message.senderId, message.data);
-                    break;
-                default:
-                    break;
-            }
-        }
     };
 
     /**
@@ -369,21 +315,46 @@ var MessageChannel = function (daemon, channelId) {
         }
         message["data"] = data;
         var _message = JSON.stringify(message);
-        console.info(tag, "MessageChannel [", _channelId, "] send: ", _message);
+        console.info(_tag, " [", _channelId, "] send: ", _message);
         if (_channel && _channel.readyState == OPEN) {
             _channel.send(_message);
         } else if (_channel && _channel.readyState == CONNECTING) {
-            console.error(tag, "MessageChannel [", _channelId, "] send delay");
+            console.error(_tag, " [", _channelId, "] send delay");
             var selfSend = this;
             setTimeout(function () {
                 selfSend.send(_message);
             }, 50);
         } else {
-            console.error(tag, "MessageChannel [", _channelId, "] send message failed. It not ready");
+            console.error(_tag, " [", _channelId, "] send message failed. It not ready");
             var event = {};
             event.message = "Underlying MessageChannel is not open";
             event.socketReadyState = CLOSED;
             _channel._onerror(event);
+        }
+    };
+
+    /**
+     * handler message from MessageChannel
+     * @param message
+     * @private
+     */
+    self._onmessage = function (message) {
+        if (message) {
+            switch (message.type) {
+                case "senderConnected":
+                    console.info(_tag, message.senderId, " connected!!!");
+                    ("onsenderConnected" in self) && (self.onsenderConnected(message.senderId));
+                    break;
+                case "senderDisonnected":
+                    console.info(_tag, message.senderId, " disconnected!!!");
+                    ("onsenderDisonnected" in self) && (self.onsenderDisonnected(message.senderId));
+                    break;
+                case "message":
+                    ("onmessage" in self) && self.onmessage(message.senderId, message.data);
+                    break;
+                default:
+                    break;
+            }
         }
     };
 

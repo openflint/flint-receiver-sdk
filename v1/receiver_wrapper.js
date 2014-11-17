@@ -19,25 +19,23 @@
 
 var ReceiverManagerWrapper = function (appid) {
     var self = this;
+    var _tag = "ReceiverManagerWrapper *** ->";
 
     var _receiverManager = new ReceiverManager(appid);
-
-    var _mainChannel = null;
+    var _mainChannel = _receiverManager.createMessageChannel("main_message_channel");
     var _messageBusList = {};
+    var _senders = {};
 
     self.open = function () {
-        _mainChannel = _receiverManager.createMessageChannel();
-        for (var bus in _messageBusList) {
-            _messageBusList[bus].setChannel(_mainChannel);
-        }
-
         _mainChannel.on("senderConnected", function (senderId) {
+            _senders[senderId] = senderId;
             for (var bus in _messageBusList) {
                 _messageBusList[bus]._onsenderConnected(senderId);
             }
         });
 
         _mainChannel.on("senderDisonnected", function (senderId) {
+            delete _senders[senderId];
             for (var bus in _messageBusList) {
                 _messageBusList[bus]._onsenderDisonnected(senderId);
             }
@@ -47,7 +45,7 @@ var ReceiverManagerWrapper = function (appid) {
             var data = JSON.parse(message);
             var ns = data.namespace;
             if (ns && _messageBusList[ns]) {
-                _messageBusList[ns].onmessage(senderId, data.payload);
+                _messageBusList[ns]._onmessage(senderId, data.payload);
             }
         });
 
@@ -63,6 +61,8 @@ var ReceiverManagerWrapper = function (appid) {
                 messageBus = new MessageBus(_mainChannel, namespace);
                 _messageBusList[namespace] = messageBus;
             }
+        } else {
+            console.error(_tag, " createMessageBus namespace is null");
         }
         return messageBus;
     };
@@ -71,36 +71,34 @@ var ReceiverManagerWrapper = function (appid) {
         return _messageBusList;
     };
 
-    self.close = function () {
-        _receiverManager.close();
+    self.getSenderList = function () {
+        return _senders;
     };
 
-    self.setAdditionalData = function (additionaldata) {
-        _receiverManager.setAdditionalData(additionaldata);
+    self.close = function () {
+        _receiverManager.close();
     };
 };
 
 var MessageBus = function (channel, namespace) {
     var self = this;
-    var tag = "@@@";
+    var _tag = "MessageBus $$$ ->";
     var _channel = channel;
     var _namespace = namespace;
-    var _senders = {}
 
     self._onsenderConnected = function (senderId) {
-        console.log(tag, "received sender connected: ", senderId);
-        _senders[senderId] = senderId;
+        console.log(_tag, "received sender connected: ", senderId);
         ("onsenderConnected" in self) && (self.onsenderConnected(senderId));
     };
 
     self._onsenderDisonnected = function (senderId) {
-        console.log(tag, "received sender disconnected: ", senderId);
-        delete _senders[senderId];
+        console.log(_tag, "received sender disconnected: ", senderId);
         ("onsenderDisonnected" in self) && (self.onsenderDisonnected(senderId));
     };
 
-    self.onmessage = function (senderId, payload) {
-        console.log(tag, "received sender message: [", senderId, "] to ", payload);
+    self._onmessage = function (senderId, payload) {
+        console.log(_tag, "received sender message: [", senderId, "] to ", payload);
+        ("onmessage" in self) && (self.onmessage(senderId, payload));
     };
 
     self.send = function (payload, senderId) {
@@ -110,18 +108,6 @@ var MessageBus = function (channel, namespace) {
         if (_channel) {
             _channel.send(JSON.stringify(data), senderId);
         }
-    };
-
-    self.setChannel = function(channel) {
-        _channel = channel;
-    };
-
-    self.getSenderList = function () {
-        return _senders;
-    };
-
-    self.getNamespace = function() {
-        return _namespace;
     };
 
     self.on = function (type, func) {
