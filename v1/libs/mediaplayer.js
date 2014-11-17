@@ -163,13 +163,14 @@ var MediaPlayer = function (manager, videoId) {
         self.mediaMetadata = mediaMetadata;
 
         self.status = "LOADDING";
-        var source = document.createElement('source');
-        source.src = url;
-        if (typeof(videoType) != "undefined" && videoType) {
-            source.type = videoType;
-        }
-        video.innerHTML = "";
-        video.appendChild(source);
+        // var source = document.createElement('source');
+        // source.src = url;
+        // if (typeof(videoType) != "undefined" && videoType) {
+        //     source.type = videoType;
+        // }
+        // video.innerHTML = "";
+        // video.appendChild(source);
+        video.src = url;
         video.load();
 
         if (typeof(title) != "undefined" && !title) {
