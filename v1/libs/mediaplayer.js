@@ -22,13 +22,13 @@ var MediaPlayer = function (manager, videoId) {
     self.mediaMetadata = null;
     self.videoVolume = 0;
     //----------------------------------------------
-    self.seq = 0;
-    self.seqLoad = 0;
-    self.seqPause = 0;
-    self.seqPlay = 0;
-    self.seqSetVolume = 0;
-    self.seqSeek = 0;
-    self.seqGetStatus = 0;
+    self.requestId = 0;
+    self.requestIdLoad = 0;
+    self.requestIdPause = 0;
+    self.requestIdPlay = 0;
+    self.requestIdSetVolume = 0;
+    self.requestIdSeek = 0;
+    self.requestIdGetStatus = 0;
 
     self.receiverWrapper = manager;
     var messageBus = self.receiverWrapper.createMessageBus("urn:flint:org.openflint.fling.media");
@@ -77,7 +77,7 @@ var MediaPlayer = function (manager, videoId) {
                         }
                     }
                 ],
-                "seq": 0
+                "requestId": 0
             };
         }
 
@@ -92,7 +92,7 @@ var MediaPlayer = function (manager, videoId) {
         };
         this.loadmetadata = function () {
             var messageData = loadData();
-            messageData["seq"] = self.seqLoad;
+            messageData["requestId"] = self.requestIdLoad;
 
             messageData.status[0].playerState = "PLAYING";
             messageData.status[0].media = {
@@ -113,13 +113,13 @@ var MediaPlayer = function (manager, videoId) {
         };
         this.playing = function () {
             var messageData = loadData();
-            messageData["seq"] = self.seqPlay;
+            messageData["requestId"] = self.requestIdPlay;
             self.playerState = messageData.status[0].playerState = "PLAYING";
             messageBus.send(JSON.stringify(messageData), _senderId);
         };
         this.paused = function () {
             var messageData = loadData();
-            messageData["seq"] = self.seqPause;
+            messageData["requestId"] = self.requestIdPause;
             self.playerState = messageData.status[0].playerState = "PAUSED";
             messageBus.send(JSON.stringify(messageData), _senderId);
         };
@@ -132,9 +132,9 @@ var MediaPlayer = function (manager, videoId) {
         this.syncPlayerState = function (type) {
             var messageData = loadData();
             if (type == "seeked") {
-                messageData["seq"] = self.seqSeek;
+                messageData["requestId"] = self.requestIdSeek;
             } else if (type == "volumechange") {
-                messageData["seq"] = self.seqSetVolume;
+                messageData["requestId"] = self.requestIdSetVolume;
             }
             if (self.mediaMetadata != null) {
                 messageData.status[0].media = {
@@ -232,31 +232,31 @@ var MediaPlayer = function (manager, videoId) {
     messageBus.on("message", function (senderId, message) {
         console.info("messageBus received: ", senderId, message);
         var messageData = JSON.parse(message);
-        self.seq = messageData.seq;
+        self.requestId = messageData.requestId;
         if ("type" in messageData) {
             switch (messageData.type) {
                 case "LOAD":
-                    (self.seq) && (self.seqLoad = self.seq);
+                    (self.requestId) && (self.requestIdLoad = self.requestId);
                     self.load(messageData.media.contentId, messageData.media.contentType, messageData.media.metadata.title, messageData.media.metadata.subtitle, messageData);
                     break;
 
                 case "PAUSE":
-                    (self.seq) && (self.seqPause = self.seq);
+                    (self.requestId) && (self.requestIdPause = self.requestId);
                     self.pause();
                     break;
 
                 case "PLAY":
-                    (self.seq) && (self.seqPlay = self.seq);
+                    (self.requestId) && (self.requestIdPlay = self.requestId);
                     self.play();
                     break;
 
                 case "SET_VOLUME":
-                    (self.seq) && (self.seqSetVolume = self.seq);
+                    (self.requestId) && (self.requestIdSetVolume = self.requestId);
                     self.volumechange(messageData.volume.level);
                     break;
 
                 case "SEEK":
-                    (self.seq) && (self.seqSeek = self.seq);
+                    (self.requestId) && (self.requestIdSeek = self.requestId);
                     self.seek(messageData.currentTime);
                     break;
 
@@ -264,7 +264,7 @@ var MediaPlayer = function (manager, videoId) {
                     break;
 
                 case "GET_STATUS":
-                    (self.seq) && (self.seqGetStatus = self.seq);
+                    (self.requestId) && (self.requestIdGetStatus = self.requestId);
                     messageReport.syncPlayerState();
                     break;
             }
