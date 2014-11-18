@@ -222,7 +222,7 @@ var MediaPlayer = function (manager, videoId) {
         console.log("@#@#@#@#", "MediaPlayer received sender connected: ", senderId);
     });
 
-    messageBus.on("senderDisonnected", function (senderId) {
+    messageBus.on("senderDisconnected", function (senderId) {
         console.log("@#@#@#@#", "MediaPlayer received sender connected: ", senderId);
     });
 

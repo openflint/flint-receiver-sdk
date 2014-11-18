@@ -345,9 +345,9 @@ var MessageChannel = function (manager, channelId) {
                     console.info(_tag, message.senderId, " connected!!!");
                     ("onsenderConnected" in self) && (self.onsenderConnected(message.senderId));
                     break;
-                case "senderDisonnected":
+                case "senderDisconnected":
                     console.info(_tag, message.senderId, " disconnected!!!");
-                    ("onsenderDisonnected" in self) && (self.onsenderDisonnected(message.senderId));
+                    ("onsenderDisconnected" in self) && (self.onsenderDisconnected(message.senderId));
                     break;
                 case "message":
                     ("onmessage" in self) && self.onmessage(message.senderId, message.data);

@@ -34,10 +34,10 @@ var ReceiverManagerWrapper = function (appid) {
             }
         });
 
-        _mainChannel.on("senderDisonnected", function (senderId) {
+        _mainChannel.on("senderDisconnected", function (senderId) {
             delete _senders[senderId];
             for (var bus in _messageBusList) {
-                _messageBusList[bus]._onsenderDisonnected(senderId);
+                _messageBusList[bus]._onsenderDisconnected(senderId);
             }
         });
 
@@ -91,9 +91,9 @@ var MessageBus = function (channel, namespace) {
         ("onsenderConnected" in self) && (self.onsenderConnected(senderId));
     };
 
-    self._onsenderDisonnected = function (senderId) {
+    self._onsenderDisconnected = function (senderId) {
         console.log(_tag, "received sender disconnected: ", senderId);
-        ("onsenderDisonnected" in self) && (self.onsenderDisonnected(senderId));
+        ("onsenderDisconnected" in self) && (self.onsenderDisconnected(senderId));
     };
 
     self._onmessage = function (senderId, payload) {
