@@ -206,7 +206,7 @@ var MediaPlayer = function (manager, videoId) {
     };
 
     self.volumechange = function (num) {
-        console.info("==========================self.volumechange===[" + num + "]=======================");
+        console.log("==========================self.volumechange===[" + num + "]=======================");
         syncExecute(function () {
             video.volume = num;
         });
@@ -214,6 +214,14 @@ var MediaPlayer = function (manager, videoId) {
         if (num == self.videoVolume) {
             messageReport.syncPlayerState("volumechange");
         }
+    };
+    self.mute = function(muted){
+        console.log("==========================self.mute===[" + muted + "]=======================");
+        syncExecute(function () {
+            video.muted = muted;
+        });
+        ("onmute" in self) && self.onmute(muted);
+        messageReport.syncPlayerState("volumechange");
     };
 
     var _senderId = "*:*";
@@ -230,7 +238,7 @@ var MediaPlayer = function (manager, videoId) {
      * sender message listener.
      **/
     messageBus.on("message", function (senderId, message) {
-        console.info("messageBus received: ", senderId, message);
+        console.info("====================================================>messageBus received: ", senderId, message);
         var messageData = JSON.parse(message);
         self.requestId = messageData.requestId;
         if ("type" in messageData) {
@@ -252,7 +260,12 @@ var MediaPlayer = function (manager, videoId) {
 
                 case "SET_VOLUME":
                     (self.requestId) && (self.requestIdSetVolume = self.requestId);
-                    self.volumechange(messageData.volume.level);
+
+                    if(typeof(messageData.volume.level)!="undefined"){
+                        self.volumechange(messageData.volume.level);
+                    }else if(typeof(messageData.volume.muted)!="undefined"){
+                        self.mute(messageData.volume.muted);
+                    }
                     break;
 
                 case "SEEK":
@@ -298,7 +311,6 @@ var MediaPlayer = function (manager, videoId) {
     });
     video.addEventListener("volumechange", function (e) {
         self.videoVolume = video.volume;
-        console.info("----------------------------------volumechange------------------------------");
         messageReport.syncPlayerState("volumechange");
     });
     video.addEventListener("seeked", function (e) {
@@ -320,6 +332,4 @@ var MediaPlayer = function (manager, videoId) {
     self.on = function (type, func) {
         self["on" + type] = func;
     };
-
-
 };
