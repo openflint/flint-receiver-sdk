@@ -307,6 +307,7 @@ var MediaPlayer = function (manager, videoId) {
         messageReport.paused();
     });
     video.addEventListener("ended", function (e) {
+        self.status = "IDLE";
         messageReport.idle("FINISHED");
     });
     video.addEventListener("volumechange", function (e) {
